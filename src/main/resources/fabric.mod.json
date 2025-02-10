@@ -1,0 +1,36 @@
+{
+	"schemaVersion": 1,
+	"id": "lyumix-discord-auth",
+	"version": "${version}",
+	"name": "Lyumix Discord Auth",
+	"description": "Server-Side Mod for Player Authentication via Discord.",
+	"authors": [
+		"Matter Moulder"
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/mod/lyumix-discord-auth",
+		"sources": "https://github.com/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot",
+		"issues": "https://github.com/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/lyumix-discord-auth/icon.png",
+	"environment": "*",
+
+	"entrypoints": {
+		"main": [
+			"com.matter_moulder.lyumixdiscordauth.Main"
+		]
+	},
+	"mixins": [
+		"lyumix-discord-auth.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.3",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
