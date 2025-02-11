@@ -118,7 +118,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Need help? Here's how to get support:
 1. Check the [Wiki](https://github.com/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot/wiki)
 2. Create an [Issue](https://github.com/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot/issues)
-3. Join our [Discord server](https://discord.gg/J8C6QzKkke)
+3. Join our [Discord server](https://discord.gg/rUGNCSzJSG)
 
 ## 🔐 Security
 
