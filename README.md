@@ -183,5 +183,5 @@ We welcome contributions! Here's how you can help:
 
 ## 📊 Build Status
 
-[![Build Status](https://img.shields.io/github/workflow/status/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot/build)](https://github.com/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot/actions)
+![Build Status](https://github.com/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot/actions/workflows/build.yml/badge.svg)
 [![Release](https://img.shields.io/github/v/release/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot)](https://github.com/MatterMoulder/Lyumix-Minecraft-Discord-Auth-Bot/releases)
