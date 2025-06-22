@@ -9,14 +9,21 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.server.Whitelist;
+import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.TeleportTarget;
 import net.minecraft.world.World;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Optional;
 
@@ -32,6 +39,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.matter_moulder.lyumixdiscordauth.models.PlayerRestoredInfo;
 import com.mojang.authlib.GameProfile;
 import com.matter_moulder.lyumixdiscordauth.handlers.JoinHandle;
+import com.matter_moulder.lyumixdiscordauth.misc.PassCodeGenerator;
 import com.matter_moulder.lyumixdiscordauth.models.PlayerAuth;
 import com.matter_moulder.lyumixdiscordauth.config.ConfigMngr;
 
@@ -98,32 +106,11 @@ public abstract class PlayerManagerMixin {
         return player.getRespawnTarget(alive, postDimensionTransition);
     }
 
-    @Redirect(method = "onPlayerConnect(Lnet/minecraft/network/ClientConnection;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/server/network/ConnectedClientData;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;startRiding(Lnet/minecraft/entity/Entity;Z)Z"))
-    private boolean onPlayerConnectStartRiding(ServerPlayerEntity instance, Entity entity, boolean force,
-            ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData) {
-        if (DenyHandle.checkPlayer(player)) {
-            return false;
-        }
-        return instance.startRiding(entity, force);
-    }
-
-    @Redirect(method = "onPlayerConnect(Lnet/minecraft/network/ClientConnection;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/server/network/ConnectedClientData;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;hasVehicle()Z"))
-    private boolean onPlayerConnectStartRiding(ServerPlayerEntity instance, ClientConnection connection,
-            ServerPlayerEntity player, ConnectedClientData clientData) {
-        if (DenyHandle.checkPlayer(player)) {
-            return true;
-        }
-        return instance.hasVehicle();
-    }
-
     @Inject(method = "remove(Lnet/minecraft/server/network/ServerPlayerEntity;)V", at = @At("HEAD"))
     private void onPlayerLeave(ServerPlayerEntity serverPlayerEntity, CallbackInfo ci) {
         DenyHandle.onPlayerLeave(serverPlayerEntity);
     }
 
-    /**
-     * Filters join/leave messages for unauthenticated players
-     */
     @Inject(at = @At("HEAD"), method = "broadcast(Lnet/minecraft/text/Text;Z)V", cancellable = true)
     void filterBroadCastMessages(Text message, boolean overlay, CallbackInfo ci) {
         String messageString = message.getString();
@@ -146,6 +133,28 @@ public abstract class PlayerManagerMixin {
         if (playerId == null) {
             cir.setReturnValue(Text.literal(ConfigMngr.msg().auth.notRegistered));
             return;
+        }
+
+        Main.LOGGER.info("Player " + profile.getName() + " is trying to join the server with ID: " + playerId + " and Code: " + Main.getDatabase().getPlayerCode(playerId));
+
+        String logCode = Main.getDatabase().getPlayerCode(playerId);
+
+        if (logCode == null || !logCode.equals("-1")) {
+            String passCode = PassCodeGenerator.generatePassCode(8, true, true, true);
+            Main.getDatabase().setPlayerCode(playerId, passCode);
+            cir.setReturnValue(Text.literal(ConfigMngr.msg().auth.notRegistered).append(Text.literal("\nCode for registration: " + Main.getDatabase().getPlayerCode(playerId)).formatted(Formatting.RED)));
+            return;
+        }
+        
+        Whitelist whitelist = playerManager.getWhitelist();
+
+        if (!whitelist.isAllowed(profile)) {
+            whitelist.add(new WhitelistEntry(profile));
+            try {
+                whitelist.save();
+            } catch (IOException e) {
+                Main.LOGGER.error("Failed to save whitelist after adding player: " + profile.getName(), e);
+            }
         }
     }
 }

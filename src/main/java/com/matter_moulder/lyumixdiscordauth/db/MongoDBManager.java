@@ -25,6 +25,7 @@ public class MongoDBManager implements DatabaseManager {
     @Override
     public void savePlayerData(String name, String playersIp, String discordId) {
         Document player = new Document("name", name)
+                .append("authcode", "")
                 .append("discord_id", discordId)
                 .append("ip", playersIp)
                 .append("last_login", 0);
@@ -65,6 +66,15 @@ public class MongoDBManager implements DatabaseManager {
     }
 
     @Override
+    public String getPlayerCode(Object id) {
+        if (getPlayerField(id, "authcode") == null || getPlayerField(id, "authcode").equals("")) {
+            return null;
+        }
+        
+        return (String) getPlayerField(id, "authcode");
+    }
+
+    @Override
     public void setPlayerDiscordId(Object id, String value) {
         linkCollection.updateOne(eq("_id", id), set("discord_id", value));
     }
@@ -77,6 +87,11 @@ public class MongoDBManager implements DatabaseManager {
     @Override
     public void setPlayerLastLoginTime(Object id, Long value) {
         linkCollection.updateOne(eq("_id", id), set("last_login", value));
+    }
+
+    @Override
+    public void setPlayerCode(Object id, String value) {
+        linkCollection.updateOne(eq("_id", id), set("authcode", value));
     }
 
     @Override

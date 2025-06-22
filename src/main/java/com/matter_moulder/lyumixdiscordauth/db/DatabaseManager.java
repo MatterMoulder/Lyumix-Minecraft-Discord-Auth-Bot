@@ -10,6 +10,8 @@ public interface DatabaseManager {
     Long getPlayerLastLoginTime(Object id);
     String getPlayerDiscordId(Object id);
     String getPlayerIp(Object id);
+    String getPlayerCode(Object id);
+    void setPlayerCode(Object id, String value);
     void setPlayerDiscordId(Object id, String value);
     void setPlayerIp(Object id, String value);
     void setPlayerLastLoginTime(Object id, Long value);

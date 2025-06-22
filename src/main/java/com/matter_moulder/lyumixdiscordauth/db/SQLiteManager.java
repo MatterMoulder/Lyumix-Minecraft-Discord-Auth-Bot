@@ -42,7 +42,6 @@ public class SQLiteManager implements DatabaseManager {
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "name TEXT UNIQUE," +
                     "authcode TEXT," +
-                    "registered INTEGER DEFAULT 0," +
                     "discord_id TEXT," +
                     "ip TEXT," +
                     "last_login INTEGER" +
@@ -161,6 +160,24 @@ public class SQLiteManager implements DatabaseManager {
     }
 
     @Override
+    public String getPlayerCode(Object id) {
+        try {
+            PreparedStatement pstmt = connection.prepareStatement("SELECT authcode FROM players WHERE id = ?");
+            pstmt.setInt(1, (Integer)id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                if (rs.getString("authcode") != null && !rs.getString("authcode").isEmpty()) {
+                    return rs.getString("authcode");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
+    }
+
+    @Override
     public void setPlayerDiscordId(Object id, String value) {
         try {
             PreparedStatement pstmt = connection.prepareStatement("UPDATE players SET discord_id = ? WHERE id = ?");
@@ -189,6 +206,18 @@ public class SQLiteManager implements DatabaseManager {
         try {
             PreparedStatement pstmt = connection.prepareStatement("UPDATE players SET last_login = ? WHERE id = ?");
             pstmt.setLong(1, value);
+            pstmt.setInt(2, (Integer)id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void setPlayerCode(Object id, String value) {
+        try {
+            PreparedStatement pstmt = connection.prepareStatement("UPDATE players SET authcode = ? WHERE id = ?");
+            pstmt.setString(1, value);
             pstmt.setInt(2, (Integer)id);
             pstmt.executeUpdate();
         } catch (SQLException e) {

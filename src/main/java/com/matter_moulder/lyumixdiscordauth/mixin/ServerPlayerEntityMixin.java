@@ -1,6 +1,7 @@
 package com.matter_moulder.lyumixdiscordauth.mixin;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.server.MinecraftServer;
@@ -8,6 +9,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.world.World;
+
+import java.util.EnumSet;
+
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -53,17 +57,20 @@ public abstract class ServerPlayerEntityMixin implements PlayerAuth {
     public void lda$restoreLastLocation() {
         PlayerRestoredInfo playerRestoredInfo = Main.playerCache.get(this.lda$getName());
         if (playerRestoredInfo.wasDead) {
-            player.kill();
+            player.getDamageSources().genericKill();
             player.getScoreboard().forEachScore(ScoreboardCriterion.DEATH_COUNT, player, (score) -> score.setScore(score.getScore() - 1));
             return;
         }
         player.teleport(
-                playerRestoredInfo.dimension == null ? server.getWorld(World.OVERWORLD) : playerRestoredInfo.dimension,
-                playerRestoredInfo.location.getX(),
-                playerRestoredInfo.location.getY(),
-                playerRestoredInfo.location.getZ(),
-                playerRestoredInfo.location.getYaw(),
-                playerRestoredInfo.location.getPitch());
+            playerRestoredInfo.dimension == null ? server.getWorld(World.OVERWORLD) : playerRestoredInfo.dimension,
+            playerRestoredInfo.location.getX(),
+            playerRestoredInfo.location.getY(),
+            playerRestoredInfo.location.getZ(),
+            EnumSet.noneOf(PositionFlag.class),
+            playerRestoredInfo.location.getYaw(),
+            playerRestoredInfo.location.getPitch(),
+            true
+        );
 
         if (playerRestoredInfo.ridingEntityUUID != null) {
 

@@ -49,6 +49,10 @@ public class BotMngr extends ListenerAdapter {
                         .addOption(STRING, "username", "Your Minecraft username", true)
                         .setGuildOnly(true)
                         .setDefaultPermissions(DefaultMemberPermissions.ENABLED),
+                Commands.slash("verify", "Verify your Minecraft account with a code")
+                        .addOption(STRING, "code", "Your verification code", true)
+                        .setGuildOnly(true)
+                        .setDefaultPermissions(DefaultMemberPermissions.ENABLED),
                 Commands.slash("instructions", "Get server connection instructions")
                         .setGuildOnly(true)
                         .setDefaultPermissions(DefaultMemberPermissions.ENABLED),
@@ -81,6 +85,7 @@ public class BotMngr extends ListenerAdapter {
         
         switch (event.getName()) {
             case "register" -> register(event, event.getOption("username").getAsString());
+            case "verify" -> verifyCode(event, event.getOption("code").getAsString());
             case "instructions" -> serverInstruction(event);
             case "status" -> checkStatus(event);
             case "unlink" -> unlinkAccount(event);
@@ -106,6 +111,38 @@ public class BotMngr extends ListenerAdapter {
         }
 
         db.savePlayerData(username, "0.0.0.0", discordId);
+        event.getHook().sendMessage(ConfigMngr.msg().auth.registrationSuccess).queue();
+    }
+
+    public void verifyCode(SlashCommandInteractionEvent event, String code) {
+        event.deferReply(true).queue();
+        
+        String discordId = event.getUser().getId();
+        Object playerId = db.getPlayerIdByDiscordId(discordId);
+        
+        if (playerId == null) {
+            event.getHook().sendMessage(ConfigMngr.msg().auth.notRegistered).setEphemeral(true).queue();
+            return;
+        }
+
+        String playerCode = db.getPlayerCode(playerId);
+        if (playerCode == null || playerCode.isEmpty()) {
+            event.getHook().sendMessage(ConfigMngr.msg().auth.notRegistered).setEphemeral(true).queue();
+            return;
+        }
+
+        if (playerCode.equals("-1")) {
+            event.getHook().sendMessage(ConfigMngr.msg().auth.alreadyRegistered).queue();
+            return;
+        }
+
+        if (!playerCode.equals(code)) {
+            event.getHook().sendMessage(ConfigMngr.msg().discord.wrongCode).setEphemeral(true).queue();
+            return;
+        }
+
+        db.setPlayerDiscordId(playerId, discordId);
+        db.setPlayerCode(playerId, "-1");
         event.getHook().sendMessage(ConfigMngr.msg().auth.registrationSuccess).queue();
     }
 

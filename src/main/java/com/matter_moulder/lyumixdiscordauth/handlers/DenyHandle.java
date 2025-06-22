@@ -16,7 +16,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.TypedActionResult;
 
 /**
  * Handles player restrictions and authentication state.
@@ -72,12 +71,12 @@ public class DenyHandle {
         return true;
     }
 
-    public static TypedActionResult<ItemStack> onUseItem(PlayerEntity player) {
+    public static ActionResult onUseItem(PlayerEntity player) {
         if (checkPlayer(Main.getServer().getPlayerManager().getPlayer(player.getUuid()))) {
-            return TypedActionResult.fail(ItemStack.EMPTY);
+            return ActionResult.FAIL;
         }
 
-        return TypedActionResult.pass(ItemStack.EMPTY);
+        return ActionResult.PASS;
     }
 
     public static ActionResult onDropItem(PlayerEntity player) {

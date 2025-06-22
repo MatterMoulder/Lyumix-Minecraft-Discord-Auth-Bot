@@ -26,6 +26,7 @@ public class PostgreDBManager implements DatabaseManager {
             CREATE TABLE IF NOT EXISTS players (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
+                authcode VARCHAR(255),
                 discord_id VARCHAR(255),
                 ip VARCHAR(255),
                 last_login BIGINT
@@ -145,6 +146,24 @@ public class PostgreDBManager implements DatabaseManager {
     }
 
     @Override
+    public String getPlayerCode(Object id) {
+        String sql = "SELECT authcode FROM players WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, (Integer) id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                if (rs.getString("authcode") != null && !rs.getString("authcode").isEmpty()) {
+                    return rs.getString("authcode");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
+    }
+
+    @Override
     public void setPlayerDiscordId(Object id, String value) {
         String sql = "UPDATE players SET discord_id = ? WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -173,6 +192,18 @@ public class PostgreDBManager implements DatabaseManager {
         String sql = "UPDATE players SET last_login = ? WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setLong(1, value);
+            pstmt.setInt(2, (Integer) id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void setPlayerCode(Object id, String value) {
+        String sql = "UPDATE players SET authcode = ? WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, value);
             pstmt.setInt(2, (Integer) id);
             pstmt.executeUpdate();
         } catch (SQLException e) {

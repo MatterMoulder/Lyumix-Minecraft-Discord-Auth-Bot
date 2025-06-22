@@ -69,6 +69,9 @@ public class Messages {
 
         @Comment("Message shown when player tries to unlink account while online")
         public String unlinkWhileOnline = "You cannot unlink your account while you are online.";
+
+        @Comment("Message shown when verification code is wrong")
+        public String wrongCode = "The verification code is incorrect. Please try again.";
     }
 
 
