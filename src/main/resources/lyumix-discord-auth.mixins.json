@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"package": "com.matter_moulder.lyumixdiscordauth.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"ServerPlayerEntityMixin",
+		"PlayerManagerMixin",
+		"CommandManagerMixin",
+		"ServerPlayNetworkHandlerMixin",
+		"SlotMixin"
+	],
+	"minVersion": "0.8",
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
