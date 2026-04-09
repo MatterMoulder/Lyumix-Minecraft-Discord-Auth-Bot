@@ -17,12 +17,18 @@
 	"environment": "*",
 
 	"entrypoints": {
-		"main": [
-			"com.matter_moulder.lyumixdiscordauth.Main"
+		"server": [
+			"com.matter_moulder.lyumixdiscordauth.Server"
+		],
+		"client": [
+			"com.matter_moulder.lyumixdiscordauth.Client"
 		]
 	},
 	"mixins": [
-		"lyumix-discord-auth.mixins.json"
+		{
+			"config": "lyumix-discord-auth.mixins.json",
+			"environment": "server"
+		}
 	],
 	"depends": {
 		"fabricloader": ">=0.15.11",

@@ -3,33 +3,58 @@ package com.matter_moulder.lyumixdiscordauth.config;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 import org.spongepowered.configurate.objectmapping.meta.Comment;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @ConfigSerializable
 public class Config {
+    @Comment("Config version. Do not change this manually.")
+    public int version = 1;
+    
     @ConfigSerializable
     public static class DatabaseConfig {
-        @Comment("Database type (mongodb, postgresql, sqlite)")
+        @Comment("Database type is fixed to sqlite for this mod.")
         public String type = "sqlite";
-
-        @Comment("Database connection string")
-        public String connectionString = "";
-
-        @Comment("Database username (for PostgreSQL)")
-        public String username = "";
-
-        @Comment("Database password (for PostgreSQL)")
-        public String password = "";
     }
 
     @ConfigSerializable
     public static class DiscordConfig {
-        @Comment("Discord bot token")
+        @Comment("Discord bot token. Get it from https://discord.com/developers/applications")
         public String botToken = "";
 
-        @Comment("Discord server ID (leave empty to allow all servers)")
+        @Comment("Discord server (guild) ID. Required when useDiscordOAuth is true.\nLeave empty to allow users from any server.")
         public String discordServerId = "";
 
-        @Comment("Allow users to unlink their accounts")
+        @Comment("Allow players to unlink their Discord account via Discord bot command.")
         public boolean allowUserUnlink = true;
+
+        @Comment("Enable Discord OAuth2 authentication.\nWhen enabled, players must authorize via Discord on first join.\nRequires discordClientId, discordClientSecret and discordOAuthRedirectUri to be set.")
+        public boolean useDiscordOAuth = false;
+
+        @Comment("Authentication flow mode: oauth_notify_fallback, oauth_only, notify_only, or legacy (uses useDiscordOAuth).")
+        public String authFlowMode = "legacy";
+
+        @Comment("Local port for the OAuth2 callback HTTP server.\nMake sure this port is accessible via your reverse proxy or Cloudflare Tunnel.")
+        public int oauthCallbackServerPort = 8080;
+
+        @Comment("Redirect URI registered in your Discord application.\nMust exactly match the URI in Discord Developer Portal.\nExample for Cloudflare Tunnel: https://your-tunnel.trycloudflare.com/callback")
+        public String discordOAuthRedirectUri = "";
+
+        @Comment("Discord application client ID.\nGet it from https://discord.com/developers/applications → Your App → OAuth2")
+        public String discordClientId = "";
+
+        @Comment("Discord application client secret. Keep this value private, never share it.\nGet it from https://discord.com/developers/applications → Your App → OAuth2")
+        public String discordClientSecret = "";
+
+        @Comment("Enable role check before finishing authentication.")
+        public boolean roleCheckEnabled = false;
+
+        @Comment("Required Discord role IDs for login. Empty list disables role matching.")
+        public List<String> requiredRoleIds = new ArrayList<>();
+
+        @Comment("When true, user must have ALL required roles. When false, any one role is enough.")
+        public boolean requireAllRoles = false;
+
     }
 
     @ConfigSerializable

@@ -38,3 +38,13 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# auth secrets and local runtime state
+config/lyumix-discord-auth/
+**/db.sqlite
+**/*.sqlite
+**/refresh-tokens.json
+**/sessions/
+**/client-refresh-token.json
+*.hocon
+

@@ -1,7 +1,9 @@
 package com.matter_moulder.lyumixdiscordauth.mixin;
 
-import com.matter_moulder.lyumixdiscordauth.SessionMngr;
+import com.matter_moulder.lyumixdiscordauth.auth.PlayerAuthManager;
+import com.matter_moulder.lyumixdiscordauth.auth.SessionManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.server.MinecraftServer;
@@ -20,7 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.matter_moulder.lyumixdiscordauth.models.Location;
 import com.matter_moulder.lyumixdiscordauth.models.PlayerAuth;
 import com.matter_moulder.lyumixdiscordauth.models.PlayerRestoredInfo;
-import com.matter_moulder.lyumixdiscordauth.handlers.DenyHandle;
 
 import java.util.UUID;
 
@@ -34,7 +35,7 @@ public abstract class ServerPlayerEntityMixin implements PlayerAuth {
 
     @Override
     public void lda$saveLastLocation() {
-        PlayerRestoredInfo cache = SessionMngr.get(this.lda$getUuid());
+        PlayerRestoredInfo cache = SessionManager.get(this.lda$getUuid());
 
         cache.location = Location.fromPlayer(player, cache.location.getDimensionKey());
         cache.ridingEntityUUID = player.getVehicle() != null ? player.getVehicle().getUuid() : null;
@@ -45,13 +46,13 @@ public abstract class ServerPlayerEntityMixin implements PlayerAuth {
 
     @Override
     public void lda$saveLastDimension(RegistryKey<World> registryKey) {
-        PlayerRestoredInfo playerRestoredInfo = SessionMngr.get(this.lda$getUuid());
+        PlayerRestoredInfo playerRestoredInfo = SessionManager.get(this.lda$getUuid());
         playerRestoredInfo.location = new Location(registryKey, 0, 0, 0, 0, 0);
     }
 
     @Override
     public void lda$restoreLastLocation() {
-        PlayerRestoredInfo playerRestoredInfo = SessionMngr.get(this.lda$getUuid());
+        PlayerRestoredInfo playerRestoredInfo = SessionManager.get(this.lda$getUuid());
         if (playerRestoredInfo.wasDead) {
             player.kill();
             player.getScoreboard().forEachScore(ScoreboardCriterion.DEATH_COUNT, player.getEntityName(), (score) -> score.setScore(score.getScore() - 1));
@@ -84,10 +85,18 @@ public abstract class ServerPlayerEntityMixin implements PlayerAuth {
 
     @Inject(method = "dropSelectedItem(Z)Z", at = @At("HEAD"), cancellable = true)
     private void dropSelectedItem(boolean dropEntireStack, CallbackInfoReturnable<Boolean> cir) {
-        ActionResult result = DenyHandle.onAnyAction(player);
+        ActionResult result = PlayerAuthManager.onAnyAction(player);
 
         if (result == ActionResult.FAIL) {
             cir.setReturnValue(false);
         }
     }
+
+    @Inject(method = "damage(Lnet/minecraft/entity/damage/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+    private void blockDamageWhileAuth(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        if (PlayerAuthManager.isPendingAuth(player)) {
+            cir.setReturnValue(false);
+        }
+    }
+
 }

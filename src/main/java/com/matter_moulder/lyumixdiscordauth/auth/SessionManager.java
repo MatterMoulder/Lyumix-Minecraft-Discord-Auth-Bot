@@ -1,11 +1,11 @@
-package com.matter_moulder.lyumixdiscordauth;
+package com.matter_moulder.lyumixdiscordauth.auth;
 
 import com.matter_moulder.lyumixdiscordauth.models.PlayerRestoredInfo;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SessionMngr {
+public class SessionManager {
     private static final ConcurrentHashMap<UUID, PlayerRestoredInfo> sessions
             = new ConcurrentHashMap<>();
 
@@ -18,8 +18,10 @@ public class SessionMngr {
     }
 
     public static void remove(UUID uuid) {
-        sessions.get(uuid).delete();
-        sessions.remove(uuid);
+        PlayerRestoredInfo info = sessions.remove(uuid);
+        if (info != null) {
+            info.delete();
+        }
     }
 
     public static boolean contains(UUID uuid) {

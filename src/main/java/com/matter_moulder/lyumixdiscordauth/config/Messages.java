@@ -3,8 +3,14 @@ package com.matter_moulder.lyumixdiscordauth.config;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 import org.spongepowered.configurate.objectmapping.meta.Comment;
 
+/**
+ * Localized text configuration used by gameplay, Discord, and admin flows.
+ */
 @ConfigSerializable
 public class Messages {
+    /**
+     * In-game authentication related messages.
+     */
     @ConfigSerializable
     public static class AuthMessages {
         @Comment("Message shown when login is required")
@@ -28,10 +34,25 @@ public class Messages {
         @Comment("Message shown when login request is rejected")
         public String loginRequestRejected = "Your login request was rejected. Please try again.";
 
+        @Comment("Message shown when linked Discord account has no required role")
+        public String missingRequiredDiscordRole = "Your Discord account does not have the required role to join this server.";
+
+        @Comment("Message shown when OAuth callback is received and verification is in progress")
+        public String oauthVerificationInProgress = "OAuth received. Verifying your account...";
+
+        @Comment("Message shown when OAuth is unavailable and auth falls back to Discord DM confirm")
+        public String oauthFallbackToDiscord = "OAuth was not detected in time. Check your Discord DM to approve login.";
+
+        @Comment("Message shown when oauth-only mode is enabled but client mod did not respond to probe")
+        public String oauthOnlyClientRequired = "This server requires OAuth mod auth. Please install/update the auth client mod and reconnect.";
+
         @Comment("Message shown when player joins the game")
         public String joinMessage = "%s joined the game";
     }
 
+    /**
+     * Discord-side interaction messages.
+     */
     @ConfigSerializable
     public static class DiscordMessages {
         @Comment("Message shown in Discord when account is unlinked")
@@ -64,14 +85,27 @@ public class Messages {
         @Comment("Message shown for unknown button interaction")
         public String unknownButton = "Unknown button";
 
+        @Comment("Message shown when button does not belong to an active login request")
+        public String invalidOrExpiredRequest = "This login request is invalid or expired.";
+
+        @Comment("Message shown when login request was already processed")
+        public String alreadyHandledRequest = "This login request was already handled.";
+
+        @Comment("Message shown when button is pressed by another Discord account")
+        public String notYourLoginRequest = "This login request does not belong to your account.";
+
+        @Comment("Message shown when player is offline while processing Discord button")
+        public String playerOfflineRequest = "Player is offline. Login request closed.";
+
         @Comment("Message shown when account link status is checked")
         public String accountLinkStatus = "Account link status for %s: %s";
 
         @Comment("Message shown when player tries to unlink account while online")
         public String unlinkWhileOnline = "You cannot unlink your account while you are online.";
     }
-
-
+    /**
+     * Administrative command messages.
+     */
     @ConfigSerializable
     public static class AdminMessages {
         @Comment("Message shown when configuration is reloaded")
@@ -99,4 +133,4 @@ public class Messages {
     public AuthMessages auth = new AuthMessages();
     public DiscordMessages discord = new DiscordMessages();
     public AdminMessages admin = new AdminMessages();
-} 
+}

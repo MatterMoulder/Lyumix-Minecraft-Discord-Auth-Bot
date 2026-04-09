@@ -1,16 +1,17 @@
 package com.matter_moulder.lyumixdiscordauth.timer;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Collections;
-
-import com.matter_moulder.lyumixdiscordauth.config.ConfigMngr;
-import com.matter_moulder.lyumixdiscordauth.handlers.DenyHandle;
+import com.matter_moulder.lyumixdiscordauth.auth.PlayerAuthManager;
+import com.matter_moulder.lyumixdiscordauth.config.ConfigManager;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Manages login timeout functionality.
@@ -24,10 +25,10 @@ public class Timer {
     private static int fullTime;
     private static int secondColorTime;
     private static String title;
-    private static boolean enabled;
+    private static boolean isEnabled;
 
     /** Thread-safe map of active login timers for players */
-    private static final Map<String, Integer> loginTimers = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<UUID, Integer> LOGIN_TIMERS = Collections.synchronizedMap(new HashMap<>());
 
     public Timer() {
         reloadConfig();
@@ -37,13 +38,15 @@ public class Timer {
      * Updates timer display and checks for timeouts each server tick
      */
     public void onServerTick(MinecraftServer server) {
-        if (!enabled) return;
+        if (!isEnabled) {
+            return;
+        }
 
         server.getPlayerManager().getPlayerList().forEach(player -> {
-            String playerName = player.getName().getString();
-            loginTimers.computeIfPresent(playerName, (key, timeRemaining) -> {
+            UUID playerUuid = player.getUuid();
+            LOGIN_TIMERS.computeIfPresent(playerUuid, (key, timeRemaining) -> {
                 if (timeRemaining <= 1) {
-                    DenyHandle.kickPlayerTimedOut(player);
+                    PlayerAuthManager.kickPlayerTimedOut(player);
                     return null;
                 }
                 sendActionBarMessage(player, timeRemaining);
@@ -53,29 +56,29 @@ public class Timer {
     }
 
     public static void startLoginTimer(ServerPlayerEntity player) {
-        loginTimers.put(player.getName().getString(), fullTime);
+        LOGIN_TIMERS.put(player.getUuid(), fullTime);
     }
 
     public static void stopLoginTimer(ServerPlayerEntity player) {
-        loginTimers.remove(player.getName().getString());
+        LOGIN_TIMERS.remove(player.getUuid());
     }
 
     public static void reloadConfig() {
-        firstBarColor = Formatting.valueOf(ConfigMngr.conf().loginTimer.firstColor);
-        secondBarColor = Formatting.valueOf(ConfigMngr.conf().loginTimer.secondColor);
-        thirdBarColor = Formatting.valueOf(ConfigMngr.conf().loginTimer.thirdColor);
-        thirdColorTime = ConfigMngr.conf().loginTimer.thirdTime * 20;
-        fullTime = ConfigMngr.conf().loginTimer.loginTime * 20;
-        secondColorTime = ConfigMngr.conf().loginTimer.secondTime * 20;
-        title = ConfigMngr.conf().loginTimer.title;
-        enabled = ConfigMngr.conf().loginTimer.enabled;
+        firstBarColor = Formatting.valueOf(ConfigManager.conf().loginTimer.firstColor);
+        secondBarColor = Formatting.valueOf(ConfigManager.conf().loginTimer.secondColor);
+        thirdBarColor = Formatting.valueOf(ConfigManager.conf().loginTimer.thirdColor);
+        thirdColorTime = ConfigManager.conf().loginTimer.thirdTime * 20;
+        fullTime = ConfigManager.conf().loginTimer.loginTime * 20;
+        secondColorTime = ConfigManager.conf().loginTimer.secondTime * 20;
+        title = ConfigManager.conf().loginTimer.title;
+        isEnabled = ConfigManager.conf().loginTimer.enabled;
     }
 
     private void sendActionBarMessage(ServerPlayerEntity player, int timeRemaining) {
         Formatting color = timeRemaining > secondColorTime ? firstBarColor :
                            timeRemaining > thirdColorTime ? secondBarColor :
                                                             thirdBarColor;
-                                                                        
+
         player.sendMessage(Text.literal(title + (timeRemaining / 20)).formatted(color), true);
     }
 }

@@ -1,5 +1,6 @@
 package com.matter_moulder.lyumixdiscordauth.mixin;
 
+import com.matter_moulder.lyumixdiscordauth.auth.PlayerAuthManager;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -12,8 +13,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import com.matter_moulder.lyumixdiscordauth.handlers.DenyHandle;
 
 import static net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND;
 
@@ -32,7 +31,7 @@ public abstract class ServerPlayNetworkHandlerMixin {
             cancellable = true
     )
     private void onPlayerChat(ChatMessageC2SPacket packet, CallbackInfo ci) {
-        ActionResult result = DenyHandle.onAnyAction(this.player);
+        ActionResult result = PlayerAuthManager.onAnyAction(this.player);
         if (result == ActionResult.FAIL) {
             ci.cancel();
         }
@@ -49,7 +48,7 @@ public abstract class ServerPlayNetworkHandlerMixin {
     )
     private void onPlayerAction(PlayerActionC2SPacket packet, CallbackInfo ci) {
         if (packet.getAction() == SWAP_ITEM_WITH_OFFHAND) {
-            ActionResult result = DenyHandle.onAnyAction(this.player);
+            ActionResult result = PlayerAuthManager.onAnyAction(this.player);
             if (result == ActionResult.FAIL) {
                 ci.cancel();
             }
@@ -66,7 +65,7 @@ public abstract class ServerPlayNetworkHandlerMixin {
             cancellable = true
     )
     private void onPlayerMove(PlayerMoveC2SPacket playerMoveC2SPacket, CallbackInfo ci) {
-        ActionResult result = DenyHandle.onPlayerMove(player);
+        ActionResult result = PlayerAuthManager.onPlayerMove(player);
         if (result == ActionResult.FAIL) {
             ci.cancel();
         }
@@ -82,7 +81,7 @@ public abstract class ServerPlayNetworkHandlerMixin {
             cancellable = true
     )
     public void onCreativeInventoryAction(CreativeInventoryActionC2SPacket packet, CallbackInfo ci) {
-        ActionResult result = DenyHandle.onAnyAction(this.player);
+        ActionResult result = PlayerAuthManager.onAnyAction(this.player);
 
         if (result == ActionResult.FAIL) {
             ci.cancel();
