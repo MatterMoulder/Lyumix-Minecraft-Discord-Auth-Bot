@@ -178,6 +178,7 @@ public class Server implements DedicatedServerModInitializer {
         data.putBoolean("discord.useDiscordOAuth", ConfigManager.conf().discord.useDiscordOAuth);
         data.putString("discord.authFlowMode", ConfigManager.conf().discord.authFlowMode == null ? "legacy" : ConfigManager.conf().discord.authFlowMode);
         data.putBoolean("discord.roleCheckEnabled", ConfigManager.conf().discord.roleCheckEnabled);
+        data.putBoolean("discord.requireGuildMembership", ConfigManager.conf().discord.requireGuildMembership);
         data.putBoolean("discord.allowUserUnlink", ConfigManager.conf().discord.allowUserUnlink);
         data.putBoolean("discord.requireAllRoles", ConfigManager.conf().discord.requireAllRoles);
         data.putString("discord.discordServerId", nullToEmpty(ConfigManager.conf().discord.discordServerId));
@@ -246,6 +247,7 @@ public class Server implements DedicatedServerModInitializer {
         ConfigManager.conf().discord.useDiscordOAuth = data.getBoolean("discord.useDiscordOAuth");
         ConfigManager.conf().discord.authFlowMode = authFlowMode;
         ConfigManager.conf().discord.roleCheckEnabled = data.getBoolean("discord.roleCheckEnabled");
+        ConfigManager.conf().discord.requireGuildMembership = data.getBoolean("discord.requireGuildMembership");
         ConfigManager.conf().discord.allowUserUnlink = data.getBoolean("discord.allowUserUnlink");
         ConfigManager.conf().discord.requireAllRoles = data.getBoolean("discord.requireAllRoles");
         ConfigManager.conf().discord.discordServerId = nullToEmpty(data.getString("discord.discordServerId")).trim();

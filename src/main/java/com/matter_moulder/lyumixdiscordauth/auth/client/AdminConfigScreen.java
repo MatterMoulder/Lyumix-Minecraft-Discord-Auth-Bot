@@ -32,6 +32,7 @@ public class AdminConfigScreen extends Screen {
 
     private boolean useDiscordOAuth;
     private boolean roleCheckEnabled;
+    private boolean requireGuildMembership;
     private boolean allowUserUnlink;
     private boolean requireAllRoles;
     private boolean blindnessWhileLogin;
@@ -56,6 +57,7 @@ public class AdminConfigScreen extends Screen {
 
     private ButtonWidget oauthButton;
     private ButtonWidget roleButton;
+    private ButtonWidget requireGuildMembershipButton;
     private ButtonWidget allowUnlinkButton;
     private ButtonWidget requireAllRolesButton;
     private ButtonWidget blindnessButton;
@@ -88,6 +90,7 @@ public class AdminConfigScreen extends Screen {
         super(Text.literal("LDA Admin Settings"));
         this.useDiscordOAuth = data.getBoolean("discord.useDiscordOAuth");
         this.roleCheckEnabled = data.getBoolean("discord.roleCheckEnabled");
+        this.requireGuildMembership = data.getBoolean("discord.requireGuildMembership");
         this.allowUserUnlink = data.getBoolean("discord.allowUserUnlink");
         this.requireAllRoles = data.getBoolean("discord.requireAllRoles");
         this.blindnessWhileLogin = data.getBoolean("login.blindnessWhileLogin");
@@ -137,6 +140,12 @@ public class AdminConfigScreen extends Screen {
 
         roleButton = addScrolledButton(ButtonWidget.builder(Text.empty(), button -> {
             roleCheckEnabled = !roleCheckEnabled;
+            refreshTexts();
+        }).dimensions(cx - 100, y, 200, 20).build(), y);
+        y += 24;
+
+        requireGuildMembershipButton = addScrolledButton(ButtonWidget.builder(Text.empty(), button -> {
+            requireGuildMembership = !requireGuildMembership;
             refreshTexts();
         }).dimensions(cx - 100, y, 200, 20).build(), y);
         y += 24;
@@ -420,6 +429,9 @@ public class AdminConfigScreen extends Screen {
         if (allowUnlinkButton != null) {
             allowUnlinkButton.setMessage(Text.literal("Allow /unlink command: " + yesNo(allowUserUnlink)));
         }
+        if (requireGuildMembershipButton != null) {
+            requireGuildMembershipButton.setMessage(Text.literal("Require guild membership: " + yesNo(requireGuildMembership)));
+        }
         if (requireAllRolesButton != null) {
             requireAllRolesButton.setMessage(Text.literal("Require all roles: " + yesNo(requireAllRoles)));
         }
@@ -451,6 +463,7 @@ public class AdminConfigScreen extends Screen {
         data.putBoolean("discord.useDiscordOAuth", useDiscordOAuth);
         data.putString("discord.authFlowMode", FLOW_MODES[flowModeIndex]);
         data.putBoolean("discord.roleCheckEnabled", roleCheckEnabled);
+        data.putBoolean("discord.requireGuildMembership", requireGuildMembership);
         data.putBoolean("discord.allowUserUnlink", allowUserUnlink);
         data.putBoolean("discord.requireAllRoles", requireAllRoles);
         data.putString("discord.discordServerId", discordServerId == null ? "" : discordServerId);

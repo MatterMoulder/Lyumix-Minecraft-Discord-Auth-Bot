@@ -28,6 +28,9 @@ public class Messages {
         @Comment("Message shown when player didn't authenticate")
         public String authenticationFailed = "Authentication failed. Please try again.";
 
+        @Comment("Message shown when player tries to join with another discord account while already linked")
+        public String alreadyLinkedToAnotherDiscord = "This Minecraft account is already linked to another Discord account. Please unlink the previous account before linking a new one.";
+
         @Comment("Message shown when player didn't authenticate in time")
         public String authenticationTimeout = "Authentication timed out. Please reconnect and try again.";
 
@@ -36,6 +39,9 @@ public class Messages {
 
         @Comment("Message shown when linked Discord account has no required role")
         public String missingRequiredDiscordRole = "Your Discord account does not have the required role to join this server.";
+
+        @Comment("Message shown when linked Discord account is not in the required server")
+        public String missingRequiredDiscordGuild = "Your Discord account must be a member of the required server to join this server.";
 
         @Comment("Message shown when OAuth callback is received and verification is in progress")
         public String oauthVerificationInProgress = "OAuth received. Verifying your account...";

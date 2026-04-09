@@ -120,8 +120,8 @@ public class AuthOrchestrator {
             }
 
             if (!linkedDiscordId.equals(discordUserId)) {
-                player.sendMessage(Text.literal(ConfigManager.msg().auth.authenticationFailed).formatted(Formatting.RED), false);
-                PlayerAuthManager.kickPlayer(player);
+                player.sendMessage(Text.literal(ConfigManager.msg().auth.alreadyLinkedToAnotherDiscord).formatted(Formatting.RED), false);
+                PlayerAuthManager.kickPlayerWithMessage(player, ConfigManager.msg().auth.alreadyLinkedToAnotherDiscord);
                 return;
             }
 
@@ -136,9 +136,14 @@ public class AuthOrchestrator {
                             return;
                         }
 
-                        if (!Boolean.TRUE.equals(hasAccess)) {
-                            currentPlayer.sendMessage(Text.literal(ConfigManager.msg().auth.missingRequiredDiscordRole).formatted(Formatting.RED), false);
-                            PlayerAuthManager.kickPlayer(currentPlayer);
+                        if (error != null) {
+                            PlayerAuthManager.kickPlayerWithMessage(currentPlayer, "Internal error");
+                            return;
+                        }
+
+                        if (!hasAccess.allowed()) {
+                            String kickMessage = handleDeny(currentPlayer, hasAccess.type());
+                            PlayerAuthManager.kickPlayerWithMessage(player, kickMessage);
                             return;
                         }
 
@@ -146,6 +151,20 @@ public class AuthOrchestrator {
                     })
             );
         });
+    }
+
+    public static String handleDeny(ServerPlayerEntity player, RoleCheckService.AccessResultType type) {
+        String message = switch (type) {
+            case ERROR -> "Error checking Discord roles";
+            case NO_GUILD -> "Cannot access Discord server";
+            case MISCONFIG -> "Server misconfigured for Discord authentication";
+            case ROLE_MISSING -> ConfigManager.msg().auth.missingRequiredDiscordRole;
+            case NOT_A_MEMBER -> ConfigManager.msg().auth.missingRequiredDiscordGuild;
+            case TIMEOUT -> "Discord role check timed out";
+            default -> "Access denied";
+        };
+        player.sendMessage(Text.literal(message).formatted(Formatting.RED), false);
+        return message;
     }
 
     public static void onDiscordApprove(ServerPlayerEntity player, Object playerId, String discordUserId, Consumer<DiscordApprovalResult> callback) {
@@ -164,9 +183,14 @@ public class AuthOrchestrator {
                             return;
                         }
 
-                        if (!Boolean.TRUE.equals(hasAccess)) {
-                            currentPlayer.sendMessage(Text.literal(ConfigManager.msg().auth.missingRequiredDiscordRole).formatted(Formatting.RED), false);
-                            PlayerAuthManager.kickPlayer(currentPlayer);
+                        if (error != null) {
+                            PlayerAuthManager.kickPlayerWithMessage(currentPlayer, "Internal error");
+                            return;
+                        }
+
+                        if (!hasAccess.allowed()) {
+                            String kickMessage = handleDeny(currentPlayer, hasAccess.type());
+                            PlayerAuthManager.kickPlayerWithMessage(player, kickMessage);
                             callback.accept(DiscordApprovalResult.ROLE_DENIED);
                             return;
                         }
@@ -327,8 +351,13 @@ public class AuthOrchestrator {
                         return;
                     }
 
-                    if (!Boolean.TRUE.equals(hasAccess)) {
-                        currentPlayer.sendMessage(Text.literal(ConfigManager.msg().auth.missingRequiredDiscordRole).formatted(Formatting.RED), false);
+                    if (error != null) {
+                        PlayerAuthManager.kickPlayerWithMessage(currentPlayer, "Internal error");
+                        return;
+                    }
+
+                    if (!hasAccess.allowed()) {
+                        handleDeny(currentPlayer, hasAccess.type());
                         onRoleDenied.run();
                         return;
                     }

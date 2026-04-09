@@ -16,7 +16,7 @@ import net.minecraft.util.TypedActionResult;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
+// TODO: Make sure location and dimension restoration works correctly on all edge cases (death, teleport, etc.) and clean up any related code if not needed.
 public class PlayerAuthManager {
     private static final ConcurrentHashMap<UUID, Long> lastAcceptedPacketByPlayer = new ConcurrentHashMap<>();
 
@@ -96,6 +96,10 @@ public class PlayerAuthManager {
         disconnectWithCleanup(player, ConfigManager.msg().auth.authenticationFailed);
     }
 
+    public static void kickPlayerWithMessage(ServerPlayerEntity player, String message) {
+        disconnectWithCleanup(player, message);
+    }
+
     public static void kickPlayerTimedOut(ServerPlayerEntity player) {
         disconnectWithCleanup(player, ConfigManager.msg().auth.authenticationTimeout);
     }
@@ -105,6 +109,7 @@ public class PlayerAuthManager {
     }
 
     private static void disconnectWithCleanup(ServerPlayerEntity player, String message) {
+        ((PlayerAuth) player).lda$restoreLastLocation();
         AuthStateManager.cleanup(player.getUuid());
         player.networkHandler.disconnect(Text.of(message));
     }

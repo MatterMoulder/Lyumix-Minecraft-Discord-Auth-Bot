@@ -4,10 +4,13 @@ import com.matter_moulder.lyumixdiscordauth.Server;
 import com.matter_moulder.lyumixdiscordauth.Utils;
 import com.matter_moulder.lyumixdiscordauth.config.Config;
 import com.matter_moulder.lyumixdiscordauth.config.ConfigManager;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.entities.Member;
 
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
@@ -18,47 +21,126 @@ public class RoleCheckService {
     private RoleCheckService() {
     }
 
-    public static CompletableFuture<Boolean> hasAccess(String discordUserId) {
+    public enum AccessResultType {
+        OK,
+        MISCONFIG,
+        NO_GUILD,
+        NOT_A_MEMBER,
+        ROLE_MISSING,
+        ERROR,
+        TIMEOUT
+    }
+
+    public record AccessResult(AccessResultType type) {
+        public boolean allowed() {
+            return type == AccessResultType.OK;
+        }
+    }
+
+    public static CompletableFuture<AccessResult> hasAccess(String discordUserId) {
         Config.DiscordConfig cfg = ConfigManager.conf().discord;
-        if (!cfg.roleCheckEnabled) {
-            return CompletableFuture.completedFuture(true);
+        List<String> requiredRoleIds = cfg.requiredRoleIds != null ? cfg.requiredRoleIds : Collections.emptyList();
+        boolean hasRequiredRoles = !requiredRoleIds.isEmpty();
+        boolean guildConfigured = cfg.discordServerId != null && !cfg.discordServerId.isBlank();
+
+        if ((cfg.requireGuildMembership || cfg.roleCheckEnabled) && !guildConfigured) {
+            return CompletableFuture.completedFuture(new AccessResult(AccessResultType.MISCONFIG));
         }
 
-        List<String> requiredRoleIds = cfg.requiredRoleIds;
-        if (requiredRoleIds == null || requiredRoleIds.isEmpty()) {
-            return CompletableFuture.completedFuture(true);
+        if (!cfg.requireGuildMembership && !cfg.roleCheckEnabled) {
+            return CompletableFuture.completedFuture(new AccessResult(AccessResultType.OK));
         }
 
         Guild guild = resolveGuild(cfg.discordServerId);
         if (guild == null) {
-            Server.getPluginLogger().warn("Role check enabled but guild is unavailable");
-            return CompletableFuture.completedFuture(false);
+            Server.getPluginLogger().warn("Guild unavailable for user {}", Utils.sanitizeLog(discordUserId));
+            return CompletableFuture.completedFuture(new AccessResult(AccessResultType.NO_GUILD));
         }
 
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        if (cfg.requireGuildMembership) {
+            Member cachedMember = guild.getMemberById(discordUserId);
+            // Cache hit — skip API call.
+            if (cachedMember != null) {
+                return CompletableFuture.completedFuture(
+                        evaluateAfterMembership(cfg, requiredRoleIds, hasRequiredRoles, cachedMember)
+                );
+            }
+            // Cache miss — retrieve async and reuse member for role check.
+            CompletableFuture<AccessResult> result = new CompletableFuture<>();
+            guild.retrieveMemberById(discordUserId).queue(
+                    member -> {
+                        if (member == null) {
+                            result.complete(new AccessResult(AccessResultType.NOT_A_MEMBER));
+                            return;
+                        }
+                        result.complete(
+                                evaluateAfterMembership(cfg, requiredRoleIds, hasRequiredRoles, member)
+                        );
+                    },
+                    error -> {
+                        // Unknown member is a normal denial, not an error.
+                        if (!(error instanceof ErrorResponseException ere
+                                && ere.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER)) {
+                            Server.getPluginLogger().warn("Failed to check guild membership/roles for user {}",
+                                    Utils.sanitizeLog(discordUserId), error);
+                            result.complete(new AccessResult(AccessResultType.ERROR));
+                        } else {
+                            result.complete(new AccessResult(AccessResultType.NOT_A_MEMBER));
+                        }
+                    }
+            );
+            return result.completeOnTimeout(new AccessResult(AccessResultType.TIMEOUT), 5, TimeUnit.SECONDS)
+                    .exceptionally(e -> new AccessResult(AccessResultType.ERROR));
+        }
+
+        if (!hasRequiredRoles) {
+            return CompletableFuture.completedFuture(new AccessResult(AccessResultType.OK));
+        }
+
+        CompletableFuture<AccessResult> result = new CompletableFuture<>();
         guild.retrieveMemberById(discordUserId).queue(
-                member -> result.complete(evaluateRoleAccess(cfg, requiredRoleIds, member)),
+                member -> {
+                    if (member == null) {
+                        result.complete(new AccessResult(AccessResultType.NOT_A_MEMBER));
+                        return;
+                    }
+                    result.complete(evaluateRoleAccess(cfg, requiredRoleIds, member));
+                },
                 error -> {
-                    Server.getPluginLogger().warn("Failed to check Discord roles for user {}", Utils.sanitizeLog(discordUserId), error);
-                    result.complete(false);
+                    if (error instanceof ErrorResponseException ere
+                            && ere.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER) {
+                        result.complete(new AccessResult(AccessResultType.NOT_A_MEMBER));
+                        return;
+                    }
+                    Server.getPluginLogger().warn("Failed to check Discord roles for user {}",
+                            Utils.sanitizeLog(discordUserId), error);
+                    result.complete(new AccessResult(AccessResultType.ERROR));
                 }
         );
-
-        // Fail closed if Discord does not respond quickly enough.
-        return result.completeOnTimeout(false, 5, TimeUnit.SECONDS)
-                .exceptionally(error -> false);
+        return result.completeOnTimeout(new AccessResult(AccessResultType.TIMEOUT), 5, TimeUnit.SECONDS)
+                .exceptionally(e -> new AccessResult(AccessResultType.ERROR));
     }
 
-    private static boolean evaluateRoleAccess(Config.DiscordConfig cfg, List<String> requiredRoleIds, Member member) {
+    private static AccessResult evaluateAfterMembership(Config.DiscordConfig cfg, List<String> requiredRoleIds, boolean hasRequiredRoles, Member member) {
+        if (!cfg.roleCheckEnabled || !hasRequiredRoles) {
+            return new AccessResult(AccessResultType.OK);
+        }
+        return evaluateRoleAccess(cfg, requiredRoleIds, member);
+    }
+
+    private static AccessResult evaluateRoleAccess(Config.DiscordConfig cfg, List<String> requiredRoleIds, Member member) {
         if (member == null) {
-            return false;
+            return new AccessResult(AccessResultType.NOT_A_MEMBER);
         }
 
         Set<String> memberRoleIds = member.getRoles().stream().map(ISnowflake::getId).collect(Collectors.toSet());
-        if (cfg.requireAllRoles) {
-            return memberRoleIds.containsAll(requiredRoleIds);
-        }
-        return requiredRoleIds.stream().anyMatch(memberRoleIds::contains);
+        boolean ok = cfg.requireAllRoles
+                ? memberRoleIds.containsAll(requiredRoleIds)
+                : requiredRoleIds.stream().anyMatch(memberRoleIds::contains);
+
+        return ok
+                ? new AccessResult(AccessResultType.OK)
+                : new AccessResult(AccessResultType.ROLE_MISSING);
     }
 
     private static Guild resolveGuild(String guildId) {

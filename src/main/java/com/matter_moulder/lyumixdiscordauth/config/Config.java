@@ -52,6 +52,11 @@ public class Config {
         @Comment("Required Discord role IDs for login. Empty list disables role matching.")
         public List<String> requiredRoleIds = new ArrayList<>();
 
+        @Comment("Require the player's Discord account to be a member of the configured Discord server (guild). " +
+                "If true and the player is not in the guild, access is denied regardless of roles. " +
+                "Only applies when discordServerId is set.")
+        public boolean requireGuildMembership = true;
+
         @Comment("When true, user must have ALL required roles. When false, any one role is enough.")
         public boolean requireAllRoles = false;
 
